@@ -1,0 +1,15 @@
+{
+	"name": "FastAgenda",
+	"version": "0.3.2",
+	"description": "Simple and Fast agenda using MongoDB, Express, AngularJS, and Node.js stack",
+	"dependencies": {
+		"bootstrap": "~3",
+		"angular": "~1.2",
+		"angular-resource": "~1.2",
+		"angular-animate": "~1.2",
+		"angular-mocks": "~1.2",
+		"angular-bootstrap": "~0.11.0",
+		"angular-ui-utils": "~0.1.1",
+		"angular-ui-router": "~0.2.10" 
+	}
+}
