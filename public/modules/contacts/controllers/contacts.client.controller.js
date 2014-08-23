@@ -9,6 +9,7 @@ angular.module('contacts').controller('ContactsController', ['$scope', '$statePa
 		$scope.create = function() {
 			var contact = new Contacts({
 				name: this.name,
+				email: this.email,
 				company: this.company,
 				lang: this.lang_model
 			});
