@@ -1,325 +1,299 @@
 'use strict';
+// Init the application configuration module for AngularJS application
 var ApplicationConfiguration = function () {
-    var applicationModuleName = 'mean', applicationModuleVendorDependencies = [
+    // Init module configuration options
+    var applicationModuleName = 'fast';
+    var applicationModuleVendorDependencies = [
         'ngResource',
         'ngAnimate',
         'ui.router',
         'ui.bootstrap',
         'ui.utils'
-      ], registerModule = function (moduleName, dependencies) {
-        angular.module(moduleName, dependencies || []), angular.module(applicationModuleName).requires.push(moduleName);
-      };
+      ];
+    // Add a new vertical module
+    var registerModule = function (moduleName, dependencies) {
+      // Create angular module
+      angular.module(moduleName, dependencies || []);
+      // Add the module to the AngularJS configuration file
+      angular.module(applicationModuleName).requires.push(moduleName);
+    };
     return {
       applicationModuleName: applicationModuleName,
       applicationModuleVendorDependencies: applicationModuleVendorDependencies,
       registerModule: registerModule
     };
-  }();
-angular.module(ApplicationConfiguration.applicationModuleName, ApplicationConfiguration.applicationModuleVendorDependencies), angular.module(ApplicationConfiguration.applicationModuleName).config([
+  }();'use strict';
+//Start by defining the main module and adding the module dependencies
+angular.module(ApplicationConfiguration.applicationModuleName, ApplicationConfiguration.applicationModuleVendorDependencies);
+// Setting HTML5 Location Mode
+angular.module(ApplicationConfiguration.applicationModuleName).config([
   '$locationProvider',
   function ($locationProvider) {
     $locationProvider.hashPrefix('!');
   }
-]), angular.element(document).ready(function () {
-  '#_=_' === window.location.hash && (window.location.hash = '#!'), angular.bootstrap(document, [ApplicationConfiguration.applicationModuleName]);
-}), ApplicationConfiguration.registerModule('articles'), ApplicationConfiguration.registerModule('core'), ApplicationConfiguration.registerModule('users'), angular.module('articles').run([
+]);
+//Then define the init function for starting up the application
+angular.element(document).ready(function () {
+  //Fixing facebook bug with redirect
+  if (window.location.hash === '#_=_')
+    window.location.hash = '#!';
+  //Then init the app
+  angular.bootstrap(document, [ApplicationConfiguration.applicationModuleName]);
+});'use strict';
+// Use Applicaion configuration module to register a new module
+ApplicationConfiguration.registerModule('contacts');'use strict';
+// Use Applicaion configuration module to register a new module
+ApplicationConfiguration.registerModule('core');'use strict';
+angular.module('contacts').run([
   'Menus',
   function (Menus) {
-    Menus.addMenuItem('topbar', 'Articles', 'articles', 'dropdown', '/articles(/create)?'), Menus.addSubMenuItem('topbar', 'articles', 'List Articles', 'articles'), Menus.addSubMenuItem('topbar', 'articles', 'New Article', 'articles/create');
+    Menus.addMenu('topbar', true);
+    Menus.addMenuItem('topbar', 'Contacts', 'contacts', 'dropdown', '/contacts(/create)?', 'hola');
+    Menus.addSubMenuItem('topbar', 'contacts', 'List Contacts', 'contacts', 'contacts', 'hola');
+    Menus.addSubMenuItem('topbar', 'contacts', 'New Contact', 'contacts/create');
   }
-]), angular.module('articles').config([
+]);'use strict';
+// Setting up route
+angular.module('contacts').config([
   '$stateProvider',
   function ($stateProvider) {
-    $stateProvider.state('listArticles', {
-      url: '/articles',
-      templateUrl: 'modules/articles/views/list-articles.client.view.html'
-    }).state('createArticle', {
-      url: '/articles/create',
-      templateUrl: 'modules/articles/views/create-article.client.view.html'
-    }).state('viewArticle', {
-      url: '/articles/:articleId',
-      templateUrl: 'modules/articles/views/view-article.client.view.html'
-    }).state('editArticle', {
-      url: '/articles/:articleId/edit',
-      templateUrl: 'modules/articles/views/edit-article.client.view.html'
+    // Contacts state routing
+    $stateProvider.state('listContacts', {
+      url: '/contacts',
+      templateUrl: 'modules/contacts/views/list-contacts.client.view.html'
+    }).state('createContact', {
+      url: '/contacts/create',
+      templateUrl: 'modules/contacts/views/create-contact.client.view.html'
+    }).state('viewContact', {
+      url: '/contacts/:contactId',
+      templateUrl: 'modules/contacts/views/view-contact.client.view.html'
+    }).state('editContact', {
+      url: '/contacts/:contactId/edit',
+      templateUrl: 'modules/contacts/views/edit-contact.client.view.html'
     });
   }
-]), angular.module('articles').controller('ArticlesController', [
+]);'use strict';
+angular.module('contacts').controller('ContactsController', [
   '$scope',
   '$stateParams',
   '$location',
-  'Authentication',
-  'Articles',
-  function ($scope, $stateParams, $location, Authentication, Articles) {
-    $scope.authentication = Authentication, $scope.create = function () {
-      var article = new Articles({
-          title: this.title,
-          content: this.content
+  'Contacts',
+  function ($scope, $stateParams, $location, Contacts) {
+    $scope.langs = [
+      {
+        'code': 'en',
+        'name': 'English'
+      },
+      {
+        'code': 'es',
+        'name': 'Spanish'
+      }
+    ];
+    $scope.lang_model = $scope.langs[0];
+    $scope.create = function () {
+      var contact = new Contacts({
+          name: this.name,
+          company: this.company,
+          lang: this.lang_model
         });
-      article.$save(function (response) {
-        $location.path('articles/' + response._id), $scope.title = '', $scope.content = '';
+      contact.$save(function (response) {
+        $location.path('contacts/' + response._id);
+        $scope.name = '';
+        $scope.email = '';
+        $scope.company = '';
+        $scope.lang = '';
       }, function (errorResponse) {
         $scope.error = errorResponse.data.message;
       });
-    }, $scope.remove = function (article) {
-      if (article) {
-        article.$remove();
-        for (var i in $scope.articles)
-          $scope.articles[i] === article && $scope.articles.splice(i, 1);
-      } else
-        $scope.article.$remove(function () {
-          $location.path('articles');
+    };
+    $scope.remove = function (contact) {
+      if (contact) {
+        contact.$remove();
+        for (var i in $scope.contacts) {
+          if ($scope.contacts[i] === contact) {
+            $scope.contacts.splice(i, 1);
+          }
+        }
+      } else {
+        $scope.contact.$remove(function () {
+          $location.path('contacts');
         });
-    }, $scope.update = function () {
-      var article = $scope.article;
-      article.$update(function () {
-        $location.path('articles/' + article._id);
+      }
+    };
+    $scope.update = function () {
+      var contact = $scope.contact;
+      contact.$update(function () {
+        $location.path('contacts/' + contact._id);
       }, function (errorResponse) {
         $scope.error = errorResponse.data.message;
       });
-    }, $scope.find = function () {
-      $scope.articles = Articles.query();
-    }, $scope.findOne = function () {
-      $scope.article = Articles.get({ articleId: $stateParams.articleId });
+    };
+    $scope.find = function () {
+      $scope.contacts = Contacts.query();
+    };
+    $scope.findOne = function () {
+      $scope.contact = Contacts.get({ contactId: $stateParams.contactId });
     };
   }
-]), angular.module('articles').factory('Articles', [
+]);'use strict';
+angular.module('contacts').factory('Contacts', [
   '$resource',
   function ($resource) {
-    return $resource('articles/:articleId', { articleId: '@_id' }, { update: { method: 'PUT' } });
+    return $resource('contacts/:contactId', { contactId: '@_id' }, { update: { method: 'PUT' } });
   }
-]), angular.module('core').config([
+]);'use strict';
+// Setting up route
+angular.module('core').config([
   '$stateProvider',
   '$urlRouterProvider',
   function ($stateProvider, $urlRouterProvider) {
-    $urlRouterProvider.otherwise('/'), $stateProvider.state('home', {
+    // Redirect to home view when route not found
+    $urlRouterProvider.otherwise('/');
+    // Home state routing
+    $stateProvider.state('home', {
       url: '/',
-      templateUrl: 'modules/core/views/home.client.view.html'
+      templateUrl: 'modules/contacts/views/create-contact.client.view.html'
     });
   }
-]), angular.module('core').controller('HeaderController', [
+]);'use strict';
+angular.module('core').controller('HeaderController', [
   '$scope',
-  'Authentication',
   'Menus',
-  function ($scope, Authentication, Menus) {
-    $scope.authentication = Authentication, $scope.isCollapsed = !1, $scope.menu = Menus.getMenu('topbar'), $scope.toggleCollapsibleMenu = function () {
+  function ($scope, Menus) {
+    $scope.isCollapsed = false;
+    $scope.menu = Menus.getMenu('topbar');
+    $scope.toggleCollapsibleMenu = function () {
       $scope.isCollapsed = !$scope.isCollapsed;
-    }, $scope.$on('$stateChangeSuccess', function () {
-      $scope.isCollapsed = !1;
+    };
+    // Collapsing the menu after navigation
+    $scope.$on('$stateChangeSuccess', function () {
+      $scope.isCollapsed = false;
     });
   }
-]), angular.module('core').controller('HomeController', [
+]);'use strict';
+angular.module('core').controller('HomeController', [
   '$scope',
-  'Authentication',
-  function ($scope, Authentication) {
-    $scope.authentication = Authentication;
+  function ($scope) {
   }
-]), angular.module('core').service('Menus', [function () {
-    this.defaultRoles = ['user'], this.menus = {};
-    var shouldRender = function (user) {
-      if (!user)
-        return this.isPublic;
-      for (var userRoleIndex in user.roles)
-        for (var roleIndex in this.roles)
-          if (this.roles[roleIndex] === user.roles[userRoleIndex])
-            return !0;
-      return !1;
+]);'use strict';
+//Menu service used for managing  menus
+angular.module('core').service('Menus', [function () {
+    // Define a set of default roles
+    this.defaultRoles = ['*'];
+    // Define the menus object
+    this.menus = {};
+    var shouldRender = function () {
+      return this.isPublic || false;
     };
+    // Validate menu existance
     this.validateMenuExistance = function (menuId) {
       if (menuId && menuId.length) {
-        if (this.menus[menuId])
-          return !0;
-        throw new Error('Menu does not exists');
+        if (this.menus[menuId]) {
+          return true;
+        } else {
+          throw new Error('Menu does not exists');
+        }
+      } else {
+        throw new Error('MenuId was not provided');
       }
-      throw new Error('MenuId was not provided');
-    }, this.getMenu = function (menuId) {
-      return this.validateMenuExistance(menuId), this.menus[menuId];
-    }, this.addMenu = function (menuId, isPublic, roles) {
-      return this.menus[menuId] = {
-        isPublic: isPublic || !1,
+      return false;
+    };
+    // Get the menu object by menu id
+    this.getMenu = function (menuId) {
+      // Validate that the menu exists
+      this.validateMenuExistance(menuId);
+      // Return the menu object
+      return this.menus[menuId];
+    };
+    // Add new menu object by menu id
+    this.addMenu = function (menuId, isPublic, roles) {
+      // Create the new menu
+      this.menus[menuId] = {
+        isPublic: isPublic || false,
         roles: roles || this.defaultRoles,
         items: [],
         shouldRender: shouldRender
-      }, this.menus[menuId];
-    }, this.removeMenu = function (menuId) {
-      this.validateMenuExistance(menuId), delete this.menus[menuId];
-    }, this.addMenuItem = function (menuId, menuItemTitle, menuItemURL, menuItemType, menuItemUIRoute, isPublic, roles, position) {
-      return this.validateMenuExistance(menuId), this.menus[menuId].items.push({
+      };
+      // Return the menu object
+      return this.menus[menuId];
+    };
+    // Remove existing menu object by menu id
+    this.removeMenu = function (menuId) {
+      // Validate that the menu exists
+      this.validateMenuExistance(menuId);
+      // Return the menu object
+      delete this.menus[menuId];
+    };
+    // Add menu item object
+    this.addMenuItem = function (menuId, menuItemTitle, menuItemURL, menuItemType, menuItemUIRoute, isPublic, roles, position) {
+      // Validate that the menu exists
+      this.validateMenuExistance(menuId);
+      // Push new menu item
+      this.menus[menuId].items.push({
         title: menuItemTitle,
         link: menuItemURL,
         menuItemType: menuItemType || 'item',
         menuItemClass: menuItemType,
         uiRoute: menuItemUIRoute || '/' + menuItemURL,
-        isPublic: null === isPublic || 'undefined' == typeof isPublic ? this.menus[menuId].isPublic : isPublic,
-        roles: roles || this.defaultRoles,
+        isPublic: isPublic === null || typeof isPublic === 'undefined' ? this.menus[menuId].isPublic : isPublic,
+        roles: roles === null || typeof roles === 'undefined' ? this.menus[menuId].roles : roles,
         position: position || 0,
         items: [],
         shouldRender: shouldRender
-      }), this.menus[menuId];
-    }, this.addSubMenuItem = function (menuId, rootMenuItemURL, menuItemTitle, menuItemURL, menuItemUIRoute, isPublic, roles, position) {
-      this.validateMenuExistance(menuId);
-      for (var itemIndex in this.menus[menuId].items)
-        this.menus[menuId].items[itemIndex].link === rootMenuItemURL && this.menus[menuId].items[itemIndex].items.push({
-          title: menuItemTitle,
-          link: menuItemURL,
-          uiRoute: menuItemUIRoute || '/' + menuItemURL,
-          isPublic: null === isPublic || 'undefined' == typeof isPublic ? this.menus[menuId].items[itemIndex].isPublic : isPublic,
-          roles: roles || this.defaultRoles,
-          position: position || 0,
-          shouldRender: shouldRender
-        });
+      });
+      // Return the menu object
       return this.menus[menuId];
-    }, this.removeMenuItem = function (menuId, menuItemURL) {
+    };
+    // Add submenu item object
+    this.addSubMenuItem = function (menuId, rootMenuItemURL, menuItemTitle, menuItemURL, menuItemUIRoute, isPublic, roles, position) {
+      // Validate that the menu exists
       this.validateMenuExistance(menuId);
-      for (var itemIndex in this.menus[menuId].items)
-        this.menus[menuId].items[itemIndex].link === menuItemURL && this.menus[menuId].items.splice(itemIndex, 1);
-      return this.menus[menuId];
-    }, this.removeSubMenuItem = function (menuId, submenuItemURL) {
-      this.validateMenuExistance(menuId);
-      for (var itemIndex in this.menus[menuId].items)
-        for (var subitemIndex in this.menus[menuId].items[itemIndex].items)
-          this.menus[menuId].items[itemIndex].items[subitemIndex].link === submenuItemURL && this.menus[menuId].items[itemIndex].items.splice(subitemIndex, 1);
-      return this.menus[menuId];
-    }, this.addMenu('topbar');
-  }]), angular.module('users').config([
-  '$httpProvider',
-  function ($httpProvider) {
-    $httpProvider.interceptors.push([
-      '$q',
-      '$location',
-      'Authentication',
-      function ($q, $location, Authentication) {
-        return {
-          responseError: function (rejection) {
-            switch (rejection.status) {
-            case 401:
-              Authentication.user = null, $location.path('signin');
-              break;
-            case 403:
-            }
-            return $q.reject(rejection);
-          }
-        };
+      // Search for menu item
+      for (var itemIndex in this.menus[menuId].items) {
+        if (this.menus[menuId].items[itemIndex].link === rootMenuItemURL) {
+          // Push new submenu item
+          this.menus[menuId].items[itemIndex].items.push({
+            title: menuItemTitle,
+            link: menuItemURL,
+            uiRoute: menuItemUIRoute || '/' + menuItemURL,
+            isPublic: isPublic === null || typeof isPublic === 'undefined' ? this.menus[menuId].items[itemIndex].isPublic : isPublic,
+            roles: roles === null || typeof roles === 'undefined' ? this.menus[menuId].items[itemIndex].roles : roles,
+            position: position || 0,
+            shouldRender: shouldRender
+          });
+        }
       }
-    ]);
-  }
-]), angular.module('users').config([
-  '$stateProvider',
-  function ($stateProvider) {
-    $stateProvider.state('profile', {
-      url: '/settings/profile',
-      templateUrl: 'modules/users/views/settings/edit-profile.client.view.html'
-    }).state('password', {
-      url: '/settings/password',
-      templateUrl: 'modules/users/views/settings/change-password.client.view.html'
-    }).state('accounts', {
-      url: '/settings/accounts',
-      templateUrl: 'modules/users/views/settings/social-accounts.client.view.html'
-    }).state('signup', {
-      url: '/signup',
-      templateUrl: 'modules/users/views/authentication/signup.client.view.html'
-    }).state('signin', {
-      url: '/signin',
-      templateUrl: 'modules/users/views/authentication/signin.client.view.html'
-    }).state('forgot', {
-      url: '/password/forgot',
-      templateUrl: 'modules/users/views/password/forgot-password.client.view.html'
-    }).state('reset-invlaid', {
-      url: '/password/reset/invalid',
-      templateUrl: 'modules/users/views/password/reset-password-invalid.client.view.html'
-    }).state('reset-success', {
-      url: '/password/reset/success',
-      templateUrl: 'modules/users/views/password/reset-password-success.client.view.html'
-    }).state('reset', {
-      url: '/password/reset/:token',
-      templateUrl: 'modules/users/views/password/reset-password.client.view.html'
-    });
-  }
-]), angular.module('users').controller('AuthenticationController', [
-  '$scope',
-  '$http',
-  '$location',
-  'Authentication',
-  function ($scope, $http, $location, Authentication) {
-    $scope.authentication = Authentication, $scope.authentication.user && $location.path('/'), $scope.signup = function () {
-      $http.post('/auth/signup', $scope.credentials).success(function (response) {
-        $scope.authentication.user = response, $location.path('/');
-      }).error(function (response) {
-        $scope.error = response.message;
-      });
-    }, $scope.signin = function () {
-      $http.post('/auth/signin', $scope.credentials).success(function (response) {
-        $scope.authentication.user = response, $location.path('/');
-      }).error(function (response) {
-        $scope.error = response.message;
-      });
+      // Return the menu object
+      return this.menus[menuId];
     };
-  }
-]), angular.module('users').controller('PasswordController', [
-  '$scope',
-  '$stateParams',
-  '$http',
-  '$location',
-  'Authentication',
-  function ($scope, $stateParams, $http, $location, Authentication) {
-    $scope.authentication = Authentication, $scope.authentication.user && $location.path('/'), $scope.askForPasswordReset = function () {
-      $scope.success = $scope.error = null, $http.post('/auth/forgot', $scope.credentials).success(function (response) {
-        $scope.credentials = null, $scope.success = response.message;
-      }).error(function (response) {
-        $scope.credentials = null, $scope.error = response.message;
-      });
-    }, $scope.resetUserPassword = function () {
-      $scope.success = $scope.error = null, $http.post('/auth/reset/' + $stateParams.token, $scope.passwordDetails).success(function (response) {
-        $scope.passwordDetails = null, Authentication.user = response, $location.path('/password/reset/success');
-      }).error(function (response) {
-        $scope.error = response.message;
-      });
+    // Remove existing menu object by menu id
+    this.removeMenuItem = function (menuId, menuItemURL) {
+      // Validate that the menu exists
+      this.validateMenuExistance(menuId);
+      // Search for menu item to remove
+      for (var itemIndex in this.menus[menuId].items) {
+        if (this.menus[menuId].items[itemIndex].link === menuItemURL) {
+          this.menus[menuId].items.splice(itemIndex, 1);
+        }
+      }
+      // Return the menu object
+      return this.menus[menuId];
     };
-  }
-]), angular.module('users').controller('SettingsController', [
-  '$scope',
-  '$http',
-  '$location',
-  'Users',
-  'Authentication',
-  function ($scope, $http, $location, Users, Authentication) {
-    $scope.user = Authentication.user, $scope.user || $location.path('/'), $scope.hasConnectedAdditionalSocialAccounts = function () {
-      for (var i in $scope.user.additionalProvidersData)
-        return !0;
-      return !1;
-    }, $scope.isConnectedSocialAccount = function (provider) {
-      return $scope.user.provider === provider || $scope.user.additionalProvidersData && $scope.user.additionalProvidersData[provider];
-    }, $scope.removeUserSocialAccount = function (provider) {
-      $scope.success = $scope.error = null, $http.delete('/users/accounts', { params: { provider: provider } }).success(function (response) {
-        $scope.success = !0, $scope.user = Authentication.user = response;
-      }).error(function (response) {
-        $scope.error = response.message;
-      });
-    }, $scope.updateUserProfile = function (isValid) {
-      if (isValid) {
-        $scope.success = $scope.error = null;
-        var user = new Users($scope.user);
-        user.$update(function (response) {
-          $scope.success = !0, Authentication.user = response;
-        }, function (response) {
-          $scope.error = response.data.message;
-        });
-      } else
-        $scope.submitted = !0;
-    }, $scope.changeUserPassword = function () {
-      $scope.success = $scope.error = null, $http.post('/users/password', $scope.passwordDetails).success(function () {
-        $scope.success = !0, $scope.passwordDetails = null;
-      }).error(function (response) {
-        $scope.error = response.message;
-      });
+    // Remove existing menu object by menu id
+    this.removeSubMenuItem = function (menuId, submenuItemURL) {
+      // Validate that the menu exists
+      this.validateMenuExistance(menuId);
+      // Search for menu item to remove
+      for (var itemIndex in this.menus[menuId].items) {
+        for (var subitemIndex in this.menus[menuId].items[itemIndex].items) {
+          if (this.menus[menuId].items[itemIndex].items[subitemIndex].link === submenuItemURL) {
+            this.menus[menuId].items[itemIndex].items.splice(subitemIndex, 1);
+          }
+        }
+      }
+      // Return the menu object
+      return this.menus[menuId];
     };
-  }
-]), angular.module('users').factory('Authentication', [function () {
-    var _this = this;
-    return _this._data = { user: window.user }, _this._data;
-  }]), angular.module('users').factory('Users', [
-  '$resource',
-  function ($resource) {
-    return $resource('users', {}, { update: { method: 'PUT' } });
-  }
-]);
+    //Adding the topbar menu
+    this.addMenu('topbar');
+  }]);
